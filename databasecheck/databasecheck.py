@@ -82,13 +82,9 @@ class DatabaseCheck:
     def database_check(self):
         #"""Comment a report of memory usage change to pull request(s)."""
         database_report = self.get_database()
-        if os.environ["GITHUB_EVENT_NAME"] == "pull_request":
-            # The sketches reports will be in a local folder location specified by the user
-            self.database_check_from_local_reports(database_report=database_report)
-        else:
-            # The script is being run from a workflow triggered by something other than a PR
-            # Scan the repository's pull requests and comment memory usage change reports where appropriate.
-            self.report_size_deltas_from_workflow_artifacts(database_report=database_report)
+
+        # The sketches reports will be in a local folder location specified by the user
+        self.database_check_from_local_reports(database_report=database_report)
 
     def get_database(self):
         logger.debug("Getting expected compilation results database")
@@ -105,123 +101,6 @@ class DatabaseCheck:
 
         if sketches_reports:
             self.check_against_database(sketches_reports=sketches_reports, database_report=database_report)
-
-    def report_size_deltas_from_workflow_artifacts(self, database_report):
-        #"""Scan the repository's pull requests and comment memory usage change reports where appropriate."""
-        # Get the repository's pull requests
-        logger.debug("Getting PRs for " + self.repository_name)
-        page_number = 1
-        page_count = 1
-        while page_number <= page_count:
-            api_data = self.api_request(request="repos/" + self.repository_name + "/pulls",
-                                        page_number=page_number)
-            prs_data = api_data["json_data"]
-            for pr_data in prs_data:
-                # Note: closed PRs are not listed in the API response
-                pr_number = pr_data["number"]
-                pr_head_sha = pr_data["head"]["sha"]
-                print("::debug::Processing pull request number:", pr_number)
-                # When a PR is locked, only collaborators may comment. The automatically generated GITHUB_TOKEN will
-                # likely be used, which is owned by the github-actions bot, who doesn't have collaborator status. So
-                # locking the thread would cause the job to fail.
-                if pr_data["locked"]:
-                    print("::debug::PR locked, skipping")
-                    continue
-
-                if self.report_exists(pr_number=pr_number,
-                                      pr_head_sha=pr_head_sha):
-                    # Go on to the next PR
-                    print("::debug::Report already exists")
-                    continue
-
-                artifact_download_url = self.get_artifact_download_url_for_sha(
-                    pr_user_login=pr_data["user"]["login"],
-                    pr_head_ref=pr_data["head"]["ref"],
-                    pr_head_sha=pr_head_sha)
-                if artifact_download_url is None:
-                    # Go on to the next PR
-                    print("::debug::No sketches report artifact found")
-                    continue
-
-                artifact_folder_object = self.get_artifact(artifact_download_url=artifact_download_url)
-
-                sketches_reports = self.get_sketches_reports(artifact_folder_object=artifact_folder_object)
-
-                if sketches_reports:
-                    if sketches_reports[0][self.ReportKeys.commit_hash] != pr_head_sha:
-                        # The deltas report key uses the hash from the report, but the report_exists() comparison is
-                        # done using the hash provided by the API. If for some reason the two didn't match, it would
-                        # result in the deltas report being done over and over again.
-                        print("::warning::Report commit hash doesn't match PR's head commit hash, skipping")
-                        continue
-
-                    self.check_against_database(sketches_reports=sketches_reports, database_report=database_report)
-
-                    # self.comment_report(pr_number=pr_number, report_markdown=report)
-
-            page_number += 1
-            page_count = api_data["page_count"]
-
-
-
-
-    def get_artifact_download_url_for_sha(self, pr_user_login, pr_head_ref, pr_head_sha):
-        """Return the report artifact download URL associated with the given head commit hash
-
-        Keyword arguments:
-        pr_user_login -- user name of the PR author (used to reduce number of GitHub API requests)
-        pr_head_ref -- name of the PR head branch (used to reduce number of GitHub API requests)
-        pr_head_sha -- hash of the head commit in the PR branch
-        """
-        # Get the repository's workflow runs
-        page_number = 1
-        page_count = 1
-        while page_number <= page_count:
-            api_data = self.api_request(request="repos/" + self.repository_name + "/actions/runs",
-                                        request_parameters="actor=" + pr_user_login + "&branch=" + pr_head_ref
-                                                           + "&event=pull_request&status=completed",
-                                        page_number=page_number)
-            runs_data = api_data["json_data"]
-
-            # Find the runs with the head SHA of the PR (there may be multiple runs)
-            for run_data in runs_data["workflow_runs"]:
-                if run_data["head_sha"] == pr_head_sha:
-                    # Check if this run has the artifact we're looking for
-                    artifact_download_url = self.get_artifact_download_url_for_run(run_id=run_data["id"])
-                    if artifact_download_url is not None:
-                        return artifact_download_url
-
-            page_number += 1
-            page_count = api_data["page_count"]
-
-        # No matching artifact found
-        return None
-
-    def get_artifact_download_url_for_run(self, run_id):
-        """Return the report artifact download URL associated with the given GitHub Actions workflow run
-
-        Keyword arguments:
-        run_id -- GitHub Actions workflow run ID
-        """
-        # Get the workflow run's artifacts
-        page_number = 1
-        page_count = 1
-        while page_number <= page_count:
-            api_data = self.api_request(request="repos/" + self.repository_name + "/actions/runs/"
-                                                + str(run_id) + "/artifacts",
-                                        page_number=page_number)
-            artifacts_data = api_data["json_data"]
-
-            for artifact_data in artifacts_data["artifacts"]:
-                # The artifact is identified by a specific name
-                if artifact_data["name"] == self.sketches_reports_source:
-                    return artifact_data["archive_download_url"]
-
-            page_number += 1
-            page_count = api_data["page_count"]
-
-        # No matching artifact found
-        return None
 
     def get_artifact(self, artifact_download_url):
         """Download and unzip the artifact and return an object for the temporary directory containing it
@@ -306,22 +185,6 @@ class DatabaseCheck:
         if not all_compilations_successful:
             print("::error::One or more compilations failed")
             sys.exit(1)
-
-    def api_request(self, request, request_parameters="", page_number=1):
-        """Do a GitHub API request. Return a dictionary containing:
-        json_data -- JSON object containing the response
-        additional_pages -- indicates whether more pages of results remain (True, False)
-        page_count -- total number of pages of results
-
-        Keyword arguments:
-        request -- the section of the URL following https://api.github.com/
-        request_parameters -- GitHub API request parameters (see: https://developer.github.com/v3/#parameters)
-                              (default value: "")
-        page_number -- Some responses will be paginated. This argument specifies which page should be returned.
-                       (default value: 1)
-        """
-        return self.get_json_response(url="https://api.github.com/" + request + "?" + request_parameters + "&page="
-                                          + str(page_number) + "&per_page=100")
 
     def get_json_response(self, url):
         """Load the specified URL and return a dictionary:
