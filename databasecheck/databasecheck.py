@@ -92,9 +92,9 @@ class DatabaseCheck:
 
     def get_database(self):
         logger.debug("Getting expected compilation results database")
-        database_artifact_folder_object = self.get_artifact("https://github.com/arduino/actions")
+        database_artifact_object = self.get_artifact("https://github.com/giulcioffi/compile-sketches/tree/CheckAgainstDatabase/database")
 
-        database_report = self.get_sketches_reports(artifact_folder_object=database_artifact_folder_object)
+        database_report = self.get_sketches_reports(artifact_folder_object=database_artifact_object)
 
         return database_report
 
