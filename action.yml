@@ -1,0 +1,5 @@
+name: 'Check Sketches Compilation Results Against Database'
+description: 'Return the compilation failure of a sketch only if the database expected compilation result was Pass'
+inputs:
+
+runs:
