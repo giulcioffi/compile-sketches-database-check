@@ -22,6 +22,7 @@ def main():
 
     database_check = DatabaseCheck(repository_name=os.environ["GITHUB_REPOSITORY"],
                                    sketches_reports_source=os.environ["INPUT_SKETCHES-REPORTS-SOURCE"],
+                                   database_reports_source=os.environ["INPUT_DATABASE-REPORTS-SOURCE"],
                                    token=os.environ["INPUT_GITHUB-TOKEN"])
 
     database_check.database_check()
@@ -74,9 +75,10 @@ class DatabaseCheck:
         sketches = "sketches"
         compilation_success = "compilation_success"
 
-    def __init__(self, repository_name, sketches_reports_source, token):
+    def __init__(self, repository_name, sketches_reports_source, database_reports_source, token):
         self.repository_name = repository_name
         self.sketches_reports_source = sketches_reports_source
+        self.database_reports_source = database_reports_source
         self.token = token
 
     def database_check(self):
@@ -88,7 +90,9 @@ class DatabaseCheck:
 
     def get_database(self):
         logger.debug("Getting expected compilation results database")
-        database_artifact_object = self.get_artifact("https://github.com/giulcioffi/compile-sketches/tree/CheckAgainstDatabase/database")
+        #database_artifact_object = pathlib.Path(os.environ["GITHUB_WORKSPACE"], self.database_reports_source)
+        #database_report = self.get_sketches_reports(artifact_folder_object=database_artifact_object)
+        database_artifact_object = self.get_artifact("https://github.com/giulcioffi/compile-sketches/blob/CheckAgainstDatabase/database/database-reports.zip")
 
         database_report = self.get_sketches_reports(artifact_folder_object=database_artifact_object)
 
@@ -109,7 +113,7 @@ class DatabaseCheck:
         artifact_download_url -- URL to download the artifact from GitHub
         """
         # Create temporary folder
-        artifact_folder_object = tempfile.TemporaryDirectory(prefix="reportsizedeltas-")
+        artifact_folder_object = tempfile.TemporaryDirectory(prefix="database-")
         try:
             # Download artifact
             with open(file=artifact_folder_object.name + "/" + self.sketches_reports_source + ".zip",
