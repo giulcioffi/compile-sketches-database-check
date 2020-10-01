@@ -4,7 +4,7 @@ FROM python:3.8.5
 COPY databasecheck /databasecheck
 
 # Install python dependencies
-RUN pip install -r /databasecheck/requirements.txt
+#RUN pip install -r /databasecheck/requirements.txt
 
 # Code file to execute when the docker container starts up
 ENTRYPOINT ["python", "/databasecheck/databasecheck.py"]
