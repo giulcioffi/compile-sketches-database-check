@@ -287,3 +287,7 @@ class DatabaseCheck:
             # from 0 to 1. 60 minutes after the start of the window, the request count is reset to 0.
             print("::warning::GitHub API request quota has been reached. Giving up for now.")
             sys.exit(0)
+
+# Only execute the following code if the script is run directly, not imported
+if __name__ == "__main__":
+    main()  # pragma: no cover
