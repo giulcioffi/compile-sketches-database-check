@@ -27,7 +27,7 @@ def main():
     database_check.database_check()
 
 
-    def set_verbosity(enable_verbosity):
+def set_verbosity(enable_verbosity):
     """Turn debug output on or off.
 
     Keyword arguments:
