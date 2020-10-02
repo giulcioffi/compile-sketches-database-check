@@ -176,13 +176,15 @@ class DatabaseCheck:
         all_compilations_successful = True
 
         for sketch_report in sketches_reports:
-            if sketch_report[self.ReportKeys.compilation_success] == "false":
-                name_report = sketch_report[self.ReportKeys.name]
-                for sketch_of_database in database_report:
-                    if sketch_of_database[self.ReportKeys.name] == name_report:
-                        if sketch_of_database[self.ReportKeys.compilation_success] == "true":
-                            all_compilations_successful = False
-                        break
+            for compilation_report in sketch_report[self.ReportKeys.compilation_success]:
+                if compilation_report[self.ReportKeys.compilation_success] is False:
+                    name_report = sketch_report[self.ReportKeys.name]
+                    for sketch_of_database in database_report:
+                        for compilation_database in sketch_of_database[self.ReportKeys.compilation_success]:
+                            if compilation_database[self.ReportKeys.name] == name_report:
+                                if compilation_database[self.ReportKeys.compilation_success] is False:
+                                    all_compilations_successful = False
+                                break
 
 
         if not all_compilations_successful:
