@@ -175,17 +175,21 @@ class DatabaseCheck:
         """
         all_compilations_successful = True
 
-        for sketch_report in sketches_reports:
-            for compilation_report in sketch_report[self.ReportKeys.compilation_success]:
-                if compilation_report[self.ReportKeys.compilation_success] is False:
-                    name_report = sketch_report[self.ReportKeys.name]
-                    for sketch_of_database in database_report:
-                        for compilation_database in sketch_of_database[self.ReportKeys.compilation_success]:
-                            if compilation_database[self.ReportKeys.name] == name_report:
-                                if compilation_database[self.ReportKeys.compilation_success] is False:
-                                    all_compilations_successful = False
-                                break
-
+        for fqbns_data in sketches_reports:
+            for fqbn_data in fqbns_data[self.ReportKeys.boards]:
+                for compilation_data in fqbn_data[self.ReportKeys.compilation_success]:
+                    if compilation_data[self.ReportKeys.compilation_success] is False:
+                        board_report = compilation_data[self.ReportKeys.board]
+                        name_report = compilation_data[self.ReportKeys.name]
+                        for database_fqbns in database_report:
+                            for database_fqbn in database_fqbns[self.ReportKeys.boards]:
+                                for compilation_database in database_fqbn[self.ReportKeys.compilation_success]:
+                                    if compilation_database[self.ReportKeys.board] == board_report:
+                                        if compilation_database[self.ReportKeys.name] == name_report:
+                                            if compilation_database[self.ReportKeys.compilation_success] is True:
+                                                print("Expected pass for ", compilation_database[self.ReportKeys.name])
+                                                all_compilations_successful = False
+                                            break
 
         if not all_compilations_successful:
             print("::error::One or more compilations failed")
@@ -292,6 +296,11 @@ class DatabaseCheck:
             # from 0 to 1. 60 minutes after the start of the window, the request count is reset to 0.
             print("::warning::GitHub API request quota has been reached. Giving up for now.")
             sys.exit(0)
+
+    def verbose_print(self, *print_arguments):
+        """Print log output when in verbose mode"""
+        if self.verbose:
+            print(*print_arguments)
 
 # Only execute the following code if the script is run directly, not imported
 if __name__ == "__main__":
