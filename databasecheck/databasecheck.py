@@ -21,6 +21,7 @@ def main():
     set_verbosity(enable_verbosity=False)
 
     database_check = DatabaseCheck(repository_name=os.environ["GITHUB_REPOSITORY"],
+                                   verbose=os.environ["INPUT_VERBOSE"],
                                    sketches_reports_source=os.environ["INPUT_SKETCHES-REPORTS-SOURCE"],
                                    database_reports_source=os.environ["INPUT_DATABASE-REPORTS-SOURCE"],
                                    token=os.environ["INPUT_GITHUB-TOKEN"])
@@ -51,6 +52,7 @@ class DatabaseCheck:
     """Methods for checking the compilation results against the database
 
     Keyword arguments:
+    verbose -- set to "true" for verbose output ("true", "false")
     repository_name -- repository owner and name e.g., octocat/Hello-World
     artifact_name -- name of the workflow artifact that contains the memory usage data
     token -- GitHub access token
@@ -75,8 +77,9 @@ class DatabaseCheck:
         sketches = "sketches"
         compilation_success = "compilation_success"
 
-    def __init__(self, repository_name, sketches_reports_source, database_reports_source, token):
+    def __init__(self, repository_name, verbose, sketches_reports_source, database_reports_source, token):
         self.repository_name = repository_name
+        self.verbose = parse_boolean_input(boolean_input=verbose)
         self.sketches_reports_source = sketches_reports_source
         self.database_reports_source = database_reports_source
         self.token = token
@@ -146,6 +149,7 @@ class DatabaseCheck:
                 self.verbose_print("File in artifact: ", report_filename)
                 # Combine sketches reports into an array
                 with open(file=report_filename.joinpath(report_filename)) as report_file:
+                    self.verbose_print("Combining sketches into an array: ", report_file)
                     report_data = json.load(report_file)
                     if (
                         (self.ReportKeys.boards not in report_data)
@@ -157,9 +161,12 @@ class DatabaseCheck:
                         continue
 
                     for fqbn_data in report_data[self.ReportKeys.boards]:
-                        if self.ReportKeys.compilation_success in fqbn_data:
+                        # self.verbose_print("fqbn_data: ", fqbn_data)
+                        if self.ReportKeys.sizes in fqbn_data:
+                            self.verbose_print("Compilation success: ", self.ReportKeys.compilation_success)
                             # The report contains deltas data
                             sketches_reports.append(report_data)
+                            self.verbose_print("sketches_reports: ", sketches_reports)
                             break
 
         if not sketches_reports:
@@ -302,6 +309,21 @@ class DatabaseCheck:
         """Print log output when in verbose mode"""
         if self.verbose:
             print(*print_arguments)
+
+def parse_boolean_input(boolean_input):
+    """Return the Boolean value of a string representation.
+
+    Keyword arguments:
+    boolean_input -- a string representing a boolean value, case insensitive
+    """
+    if boolean_input.lower() == "true":
+        parsed_boolean_input = True
+    elif boolean_input.lower() == "false":
+        parsed_boolean_input = False
+    else:
+        parsed_boolean_input = None
+
+    return parsed_boolean_input
 
 # Only execute the following code if the script is run directly, not imported
 if __name__ == "__main__":

@@ -1,6 +1,9 @@
 name: 'Check Sketches Compilation Results Against Database'
 description: 'Return the compilation failure of a sketch only if the database expected compilation result was Pass'
 inputs:
+  verbose:
+    description: 'Set to true to show verbose output in the log'
+    default: false
   sketches-reports-source:
     description: 'When run from scheduled workflow, name of the workflow artifact that contains sketches reports. When run from a pull request triggered workflow, path to the folder containing sketches reports.'
     default: 'sketches-reports'
