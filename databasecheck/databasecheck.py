@@ -143,6 +143,7 @@ class DatabaseCheck:
             artifact_folder = pathlib.Path(artifact_folder)
             sketches_reports = []
             for report_filename in sorted(artifact_folder.iterdir()):
+                self.verbose_print("File in artifact: ", report_filename)
                 # Combine sketches reports into an array
                 with open(file=report_filename.joinpath(report_filename)) as report_file:
                     report_data = json.load(report_file)
