@@ -90,7 +90,7 @@ class DatabaseCheck:
 
     def get_database(self):
         logger.debug("Getting expected compilation results database")
-        database_artifact_object = pathlib.Path(os.environ["GITHUB_WORKSPACE"], self.database_reports_source)
+        database_artifact_object = pathlib.Path(os.environ["GITHUB_WORKSPACE"], self.database-reports-source)
         #database_artifact_object = self.get_artifact("https://github.com/giulcioffi/compile-sketches/blob/CheckAgainstDatabase/database/database-reports.zip")
 
         database_report = self.get_sketches_reports(artifact_folder_object=database_artifact_object)
@@ -156,7 +156,7 @@ class DatabaseCheck:
                         continue
 
                     for fqbn_data in report_data[self.ReportKeys.boards]:
-                        if self.ReportKeys.sizes in fqbn_data:
+                        if self.ReportKeys.compilation_success in fqbn_data:
                             # The report contains deltas data
                             sketches_reports.append(report_data)
                             break
