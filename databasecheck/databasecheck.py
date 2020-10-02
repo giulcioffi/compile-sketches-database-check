@@ -160,14 +160,16 @@ class DatabaseCheck:
                         print("Old format sketches report found, skipping")
                         continue
 
-                    for fqbn_data in report_data[self.ReportKeys.boards]:
+                    #for fqbn_data in report_data[self.ReportKeys.boards]:
+                    sketches_reports.append(report_data)
+                    break
                         # self.verbose_print("fqbn_data: ", fqbn_data)
-                        if self.ReportKeys.sizes in fqbn_data:
-                            self.verbose_print("Compilation success: ", self.ReportKeys.compilation_success)
+                        #if self.ReportKeys.sizes in fqbn_data:
+                        #    self.verbose_print("Compilation success: ", self.ReportKeys.compilation_success)
                             # The report contains deltas data
-                            sketches_reports.append(report_data)
-                            self.verbose_print("sketches_reports: ", sketches_reports)
-                            break
+                        #    sketches_reports.append(report_data)
+                        #    self.verbose_print("sketches_reports: ", sketches_reports)
+                        #    break
 
         if not sketches_reports:
             print("No size deltas data found in workflow artifact for this PR. The compile-examples action's "
