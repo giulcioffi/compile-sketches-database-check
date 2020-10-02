@@ -97,7 +97,7 @@ class DatabaseCheck:
         #database_artifact_object = self.get_artifact("https://github.com/giulcioffi/compile-sketches/blob/CheckAgainstDatabase/database/database-reports.zip")
 
         database_report = self.get_sketches_reports(artifact_folder_object=database_artifact_object)
-        self.verbose_print("get_sketches_reports for database returned: ", database_report)
+        # self.verbose_print("get_sketches_reports for database returned: ", database_report)
         return database_report
 
     def database_check_from_local_reports(self, database_report):
@@ -105,7 +105,7 @@ class DatabaseCheck:
         sketches_reports_folder = pathlib.Path(os.environ["GITHUB_WORKSPACE"], self.sketches_reports_source)
         sketches_reports = self.get_sketches_reports(artifact_folder_object=sketches_reports_folder)
 
-        self.verbose_print("get_sketches_reports for sketches returned: ", sketches_reports)
+        # self.verbose_print("get_sketches_reports for sketches returned: ", sketches_reports)
         if sketches_reports:
             self.check_against_database(sketches_reports=sketches_reports, database_report=database_report)
 
@@ -189,19 +189,18 @@ class DatabaseCheck:
         for fqbns_data in sketches_reports:
             for fqbn_data in fqbns_data[self.ReportKeys.boards]:
                 self.verbose_print("sketches_reports fqbn_data: ", fqbn_data)
-                for compiled_sketch in fqbn_data[self.ReportKeys.sketches]:
-                    if compiled_sketch[self.ReportKeys.compilation_success] is False:
-                        board_report = fqbn_data[self.ReportKeys.board]
-                        name_report = compiled_sketch[self.ReportKeys.name]
-                        sketch_report = compiled_sketch[self.ReportKeys.sketches]
+                for compilation_data in fqbn_data[self.ReportKeys.compilation_success]:
+                    if compilation_data[self.ReportKeys.compilation_success] is False:
+                        board_report = compilation_data[self.ReportKeys.board]
+                        name_report = compilation_data[self.ReportKeys.name]
                         for database_fqbns in database_report:
                             for database_fqbn in database_fqbns[self.ReportKeys.boards]:
                                 self.verbose_print("database fqbn_data: ", database_fqbn)
-                                if database_fqbn[self.ReportKeys.com] == board_report:
-                                    for database_sketch in database_fqbn[self.ReportKeys.sketches]:
-                                        if database_sketch[self.ReportKeys.name] == name_report:
-                                            if database_sketch[self.ReportKeys.compilation_success] is True:
-                                                print("Expected pass for ", database_sketch[self.ReportKeys.name])
+                                for compilation_database in database_fqbn[self.ReportKeys.compilation_success]:
+                                    if compilation_database[self.ReportKeys.board] == board_report:
+                                        if compilation_database[self.ReportKeys.name] == name_report:
+                                            if compilation_database[self.ReportKeys.compilation_success] is True:
+                                                print("Expected pass for ", compilation_database[self.ReportKeys.name])
                                                 all_compilations_successful = False
                                             break
 
